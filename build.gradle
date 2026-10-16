@@ -1,0 +1,177 @@
+plugins {
+    id 'java-library'
+    id 'idea'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+version = mod_version
+group = mod_group_id
+
+repositories {
+    mavenLocal()
+}
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        // Left unset by default; mappings come from the official channel bundled with NeoForge.
+    }
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        configureEach {
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Native daemon (Zig) cross-compilation + bundling.
+//
+// The mod registers nothing and carries no server logic; all boss behaviour lives in a
+// standalone Zig daemon under native/. We cross-compile it for every supported platform and
+// drop the binaries into a generated resources directory so they ship inside the mod jar.
+// At runtime the Java side extracts the one matching the host (see NativeDaemonBinaries).
+// ---------------------------------------------------------------------------
+def nativeResourcesDir = layout.buildDirectory.dir('generated/native-resources')
+
+// os-arch key -> [zig target triple, output binary name]
+def nativeTargets = [
+        'macos-aarch64' : ['aarch64-macos', 'abyssal_sovereign_daemon'],
+        'windows-x86_64': ['x86_64-windows', 'abyssal_sovereign_daemon.exe'],
+        'linux-x86_64'  : ['x86_64-linux', 'abyssal_sovereign_daemon'],
+        'linux-aarch64' : ['aarch64-linux', 'abyssal_sovereign_daemon'],
+]
+
+def resolveZigCommand = {
+    if (project.hasProperty('zig_cmd') && project.property('zig_cmd') != 'zig') {
+        return project.property('zig_cmd')
+    }
+    def envZig = System.getenv('ZIG')
+    if (envZig != null && !envZig.isEmpty()) {
+        return envZig
+    }
+    def home = System.getProperty('user.home')
+    def miseZig = new File("${home}/.local/share/mise/installs/zig/0.17.0/zig")
+    if (miseZig.exists()) {
+        return miseZig.absolutePath
+    }
+    return project.hasProperty('zig_cmd') ? project.property('zig_cmd') : 'zig'
+}
+
+tasks.register('assembleNativeDaemons') {
+    group = 'native'
+    description = 'Cross-compiles the Zig daemon for every supported platform and stages it into resources.'
+
+    def nativeSrc = file('native/src')
+    def buildZig = file('native/build.zig')
+    def buildZon = file('native/build.zig.zon')
+    inputs.dir(nativeSrc)
+    inputs.file(buildZig)
+    inputs.file(buildZon)
+    inputs.property('targets', nativeTargets.keySet().toString())
+    def outDir = nativeResourcesDir
+    outputs.dir(outDir)
+
+    doLast {
+        def zig = resolveZigCommand()
+        def nativeDir = file('native')
+        def stagingRoot = outDir.get().dir('native').asFile
+        delete(stagingRoot)
+        nativeTargets.each { key, spec ->
+            def triple = spec[0]
+            def binName = spec[1]
+            def prefix = layout.buildDirectory.dir("native/${key}").get().asFile
+            exec {
+                workingDir = nativeDir
+                commandLine zig, 'build', "-Dtarget=${triple}", '--release=safe', '-p', prefix.absolutePath
+            }
+            def produced = new File(prefix, "bin/${binName}")
+            if (!produced.exists()) {
+                throw new GradleException("Zig build did not produce ${produced} for target ${triple}")
+            }
+            def dest = new File(stagingRoot, key)
+            dest.mkdirs()
+            copy {
+                from produced
+                into dest
+            }
+        }
+    }
+}
+
+sourceSets.main.resources.srcDir(nativeResourcesDir)
+
+// ---------------------------------------------------------------------------
+// Mod metadata generation (expands ${} placeholders in src/main/templates).
+// ---------------------------------------------------------------------------
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.named('processResources') {
+    dependsOn 'assembleNativeDaemons'
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+    }
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}

@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  daemon:
+    name: Zig daemon (test + cross-compile)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Zig 0.17.0
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+
+      - name: Unit tests
+        working-directory: native
+        run: zig build test --summary all
+
+      - name: Cross-compile every shipped target
+        working-directory: native
+        run: |
+          set -euo pipefail
+          for triple in aarch64-macos x86_64-windows x86_64-linux aarch64-linux; do
+            echo "::group::$triple"
+            zig build -Dtarget="$triple" --release=safe -p "zig-out/$triple"
+            echo "::endgroup::"
+          done
+
+      - name: Upload daemon binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: daemons
+          path: native/zig-out/*/bin/*
+
+  mod:
+    name: Mod (Gradle build + tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Zig 0.17.0
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.17.0
+
+      - name: Build (bundles native daemons, runs JUnit)
+        run: ./gradlew build --no-daemon --stacktrace
+        env:
+          # build.gradle probes a mise path first; on CI Zig is on PATH.
+          ZIG: zig

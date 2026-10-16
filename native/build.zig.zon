@@ -1,0 +1,11 @@
+.{
+    .name = .abyssal_sovereign_daemon,
+    .version = "0.1.0",
+    .fingerprint = 0x9353f44475748f5d,
+    .minimum_zig_version = "0.17.0",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}

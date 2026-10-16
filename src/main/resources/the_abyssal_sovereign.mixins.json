@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.eltavine.the_abyssal_sovereign.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [],
+  "client": [
+    "client.GuiMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
