@@ -31,9 +31,31 @@ public final class SovereignWorldRenderer {
     /** Vanilla Warden bounding-box height, used to place the light crown above the head. */
     private static final float BASE_HEIGHT = 2.9F;
 
+    /** A per-tick jump longer than this is a teleport or respawn, drawn as a cut rather than a sweep. */
+    private static final double SNAP_DISTANCE_SQR = 8.0D * 8.0D;
+
     private static SovereignWardenRig rig;
+    private static Vec3 prevAnchor;
+    private static Vec3 anchor;
 
     private SovereignWorldRenderer() {
+    }
+
+    /**
+     * Steps the interpolation window to the daemon's latest anchor; call once per client tick. The
+     * anchor only moves on ticks while the camera moves every frame, so it is drawn interpolated,
+     * the way vanilla draws an entity.
+     */
+    public static void tick() {
+        BossCommand.BossState state = SovereignClient.bridge().bossState();
+        if (!state.present()) {
+            prevAnchor = null;
+            anchor = null;
+            return;
+        }
+        Vec3 latest = new Vec3(state.x(), state.y(), state.z());
+        prevAnchor = anchor == null || anchor.distanceToSqr(latest) > SNAP_DISTANCE_SQR ? latest : anchor;
+        anchor = latest;
     }
 
     public static void render(RenderLevelStageEvent event) {
@@ -60,10 +82,11 @@ public final class SovereignWorldRenderer {
 
         SovereignWardenRig model = rig(minecraft);
         model.setAnim(state.anim(), clientTick);
+        Vec3 pos = anchor == null ? new Vec3(state.x(), state.y(), state.z()) : prevAnchor.lerp(anchor, partial);
 
         // The towering model itself.
         poseStack.pushPose();
-        poseStack.translate(state.x() - camPos.x, state.y() - camPos.y, state.z() - camPos.z);
+        poseStack.translate(pos.x - camPos.x, pos.y - camPos.y, pos.z - camPos.z);
         poseStack.pushPose();
         poseStack.mulPose(Axis.YP.rotationDegrees(180.0F - state.yaw()));
         poseStack.scale(-1.0F, -1.0F, 1.0F);

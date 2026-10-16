@@ -29,6 +29,9 @@ public final class ClientGameEvents {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        // Before this tick's snapshot goes out, so the renderer always steps to the previous tick's
+        // reply instead of racing the bridge thread for the new one.
+        SovereignWorldRenderer.tick();
         SovereignClient.onClientTick();
     }
 
