@@ -2,6 +2,7 @@ package com.eltavine.the_abyssal_sovereign.client;
 
 import com.eltavine.the_abyssal_sovereign.TheAbyssalSovereign;
 import com.eltavine.the_abyssal_sovereign.bridge.BossCommand;
+import net.minecraft.Util;
 import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -17,6 +18,17 @@ import net.neoforged.neoforge.client.event.ViewportEvent;
 public final class ClientAtmosphere {
 
     private ClientAtmosphere() {
+    }
+
+    @SubscribeEvent
+    public static void onCameraAngles(ViewportEvent.ComputeCameraAngles event) {
+        if (!SovereignClient.isActive()) {
+            return;
+        }
+        long now = Util.getMillis();
+        event.setYaw(event.getYaw() + ScreenTremor.cameraYaw(now));
+        event.setPitch(event.getPitch() + ScreenTremor.cameraPitch(now));
+        event.setRoll(event.getRoll() + ScreenTremor.cameraRoll(now));
     }
 
     @SubscribeEvent

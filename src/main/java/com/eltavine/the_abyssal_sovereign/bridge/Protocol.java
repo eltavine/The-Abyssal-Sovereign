@@ -38,6 +38,11 @@ public final class Protocol {
     public static final int CMD_PARTICLE = 0x05;
     public static final int CMD_LIGHTNING = 0x06;
     public static final int CMD_AURA = 0x07;
+    public static final int CMD_PURGE = 0x08;
+
+    // Purge scopes. GLOBAL ignores position and radius and sweeps every loaded level.
+    public static final int PURGE_LOCAL = 0;
+    public static final int PURGE_GLOBAL = 1;
 
     // Boss animations (index the vanilla Warden model animations the shell drives).
     public static final int ANIM_IDLE = 0;

@@ -18,15 +18,18 @@ public record DaemonConfig(
         int lightningIntervalTicks,
         int auraIntervalTicks,
         float damagePerAttack,
-        float auraRadius) {
+        float auraRadius,
+        int lightningPerTick) {
+
+    public static final int BYTES = 4 + 4 * 3 + 4 * 3 + 4 * 2 + 4;
 
     public static DaemonConfig defaults() {
-        return new DaemonConfig(42.0f, 60.0f, 100.0f, 48, 70, 40, 12.0f, 36.0f);
+        return new DaemonConfig(42.0f, 60.0f, 100.0f, 48, 70, 40, 12.0f, 36.0f, 5);
     }
 
     /** Encodes the HELLO payload (without the frame header or opcode). */
     public byte[] encode() {
-        ByteBuffer buf = ByteBuffer.allocate(4 + 4 * 3 + 4 * 3 + 4 * 2).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer buf = ByteBuffer.allocate(BYTES).order(ByteOrder.LITTLE_ENDIAN);
         buf.putInt(Protocol.PROTOCOL_VERSION);
         buf.putFloat(engageRadius);
         buf.putFloat(bossDistance);
@@ -36,6 +39,7 @@ public record DaemonConfig(
         buf.putInt(auraIntervalTicks);
         buf.putFloat(damagePerAttack);
         buf.putFloat(auraRadius);
+        buf.putInt(lightningPerTick);
         return buf.array();
     }
 }

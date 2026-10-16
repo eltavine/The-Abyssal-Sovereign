@@ -54,6 +54,40 @@ class ProtocolCodecTest {
     }
 
     @Test
+    void helloEndsWithBoltsPerTickDefaultingToOneHundredASecond() {
+        byte[] bytes = DaemonConfig.defaults().encode();
+        assertEquals(DaemonConfig.BYTES, bytes.length);
+        ByteBuffer buf = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
+        buf.position(bytes.length - 4);
+        int perTick = buf.getInt();
+        assertEquals(5, perTick);
+        assertEquals(100, perTick * 20);
+    }
+
+    @Test
+    void decodesAGlobalPurgeAsTheDaemonEncodesIt() {
+        ByteBuffer buf = ByteBuffer.allocate(64).order(ByteOrder.LITTLE_ENDIAN);
+        buf.putShort((short) 2);
+        buf.put((byte) Protocol.CMD_PURGE);
+        buf.putDouble(1.0).putDouble(2.0).putDouble(3.0);
+        buf.putFloat(0.0f);
+        buf.put((byte) Protocol.PURGE_GLOBAL);
+        // A trailing command proves the purge consumed exactly its own bytes.
+        buf.put((byte) Protocol.CMD_ATMOSPHERE);
+        buf.putFloat(1.0f).putFloat(0.5f).putFloat(1.0f);
+
+        byte[] payload = new byte[buf.position()];
+        System.arraycopy(buf.array(), 0, payload, 0, buf.position());
+
+        List<BossCommand> commands = BossCommand.decodeBatch(payload);
+        assertEquals(2, commands.size());
+        BossCommand.Purge purge = assertInstanceOf(BossCommand.Purge.class, commands.get(0));
+        assertTrue(purge.global());
+        assertEquals(3.0, purge.z());
+        assertInstanceOf(BossCommand.Atmosphere.class, commands.get(1));
+    }
+
+    @Test
     void decodesABatchOfCommandsTheDaemonWouldSend() {
         ByteBuffer buf = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
         buf.putShort((short) 3); // count

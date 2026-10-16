@@ -50,6 +50,8 @@ public final class LocalPlayerEffector {
             applyAura(minecraft, player, aura);
         } else if (command instanceof BossCommand.Lightning lightning) {
             AbyssalLightningRenderer.spawn(lightning.x(), lightning.y(), lightning.z(), lightning.seed(), SovereignClient.clientTick());
+        } else if (command instanceof BossCommand.Purge purge) {
+            WorldErasure.purge(purge);
         }
     }
 

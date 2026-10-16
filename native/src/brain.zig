@@ -121,7 +121,7 @@ pub const Boss = struct {
     last_attack_tick: i64 = SENTINEL_TICK,
     last_aura_tick: i64 = SENTINEL_TICK,
     rng: u64 = 0x9E3779B97F4A7C15,
-    schedule: [16]Scheduled = [_]Scheduled{.{}} ** 16,
+    schedule: [16]Scheduled = @splat(.{}),
 
     pub fn init() Boss {
         return .{};
@@ -520,7 +520,60 @@ test "the titan stands beside the player wherever they go" {
     boss.step(makeSnapshotIn(0, 0, 0.0, 64.0, 0.0, ACTIVE_FLAGS), &cmds);
 
     // Far teleports, a respawn high in the sky, a deep cave and another dimension entirely.
-    const Spot = struct { dim: u64, x
+    const Spot = struct { dim: u64, x: f64, y: f64, z: f64 };
+    const spots = [_]Spot{
+        .{ .dim = 0, .x = 5000.0, .y = 64.0, .z = -3000.0 },
+        .{ .dim = 0, .x = -120000.0, .y = 310.0, .z = 77.0 },
+        .{ .dim = 0, .x = 12.0, .y = -58.0, .z = 9.0 },
+        .{ .dim = 0x7A11, .x = 625.0, .y = 32.0, .z = -400.0 },
+    };
+    for (spots, 1..) |s, t| {
+        cmds = CommandList{};
+        boss.step(makeSnapshotIn(@intCast(t), s.dim, s.x, s.y, s.z, ACTIVE_FLAGS), &cmds);
+        const dx = boss.ax - s.x;
+        const dz = boss.az - s.z;
+        try std.testing.expectApproxEqAbs(@as(f64, boss.cfg.boss_distance), @sqrt(dx * dx + dz * dz), 1.0e-6);
+        try std.testing.expectEqual(s.y, boss.ay);
+        try std.testing.expectEqual(@as(usize, 1), cmds.countOf(.boss_state));
+    }
+}
+
+test "one hundred random judgement bolts fall every second" {
+    var boss = Boss.initSeed(7);
+    var bolts: usize = 0;
+    var first: ?Lightning = null;
+    var distinct = false;
+    var tick: i64 = 0;
+    while (tick < 20) : (tick += 1) {
+        var cmds = CommandList{};
+        boss.step(makeSnapshotAt(tick, 100.0, -50.0, ACTIVE_FLAGS), &cmds);
+        for (cmds.slice()) |cmd| {
+            if (cmd != .lightning) continue;
+            const l = cmd.lightning;
+            bolts += 1;
+            const r = @sqrt((l.x - 100.0) * (l.x - 100.0) + (l.z + 50.0) * (l.z + 50.0));
+            try std.testing.expect(r >= STRIKE_MIN_RADIUS - 1.0e-9 and r <= STRIKE_MAX_RADIUS + 1.0e-9);
+            if (first) |f| {
+                if (f.x != l.x or f.z != l.z or f.seed != l.seed) distinct = true;
+            } else first = l;
+        }
+    }
+    try std.testing.expectEqual(@as(usize, 100), bolts);
+    try std.testing.expect(distinct);
+}
+
+test "every active tick orders a world-wide purge, and only then" {
+    var boss = Boss.init();
+    var cmds = CommandList{};
+    boss.step(makeSnapshot(0, 0, ACTIVE_FLAGS), &cmds);
+    try std.testing.expectEqual(@as(usize, 1), cmds.countOf(.purge));
+    for (cmds.slice()) |cmd| {
+        if (cmd == .purge) try std.testing.expectEqual(proto.PURGE_GLOBAL, cmd.purge.scope);
+    }
+    cmds = CommandList{};
+    boss.step(makeSnapshot(1, 0, proto.FLAG_IN_WORLD), &cmds);
+    try std.testing.expectEqual(@as(usize, 0), cmds.countOf(.purge));
+}
 
 test "ability selection is deterministic for a fixed seed" {
     var a = Boss.initSeed(12345);

@@ -109,4 +109,99 @@ final class GeoDraw {
                     0.0F, rgb, alpha);
         }
     }
+
+    /**
+     * Scratch for parametric curves. Rendering happens on the client thread, so one buffer is enough
+     * as long as a curve is stroked before the next one is sampled into it.
+     */
+    private static final float[] CURVE_X = new float[360];
+    private static final float[] CURVE_Z = new float[360];
+
+    /** A sampled polyline as a ribbon of constant thickness. The samples are what make the shape. */
+    static void stroke(VertexConsumer c, Matrix4f m, float[] xs, float[] zs, int count, float thickness, int rgb, int alpha) {
+        float half = thickness * 0.5F;
+        for (int i = 1; i < count; i++) {
+            float ax = xs[i - 1];
+            float az = zs[i - 1];
+            float bx = xs[i];
+            float bz = zs[i];
+            float dx = bx - ax;
+            float dz = bz - az;
+            float len = Mth.sqrt(dx * dx + dz * dz);
+            if (len < 1.0E-4F) {
+                continue;
+            }
+            float nx = -dz / len * half;
+            float nz = dx / len * half;
+            quad(c, m, ax - nx, az - nz, ax + nx, az + nz, bx + nx, bz + nz, bx - nx, bz - nz, 0.0F, rgb, alpha);
+        }
+    }
+
+    /** Rhodonea curve {@code r = cos(petals · θ)}. Petals ≥ 2, so this is a flower, never a circle. */
+    static void rose(VertexConsumer c, Matrix4f m, float radius, int petals, int samples, float thickness,
+                     int rgb, int alpha, float rotRadians) {
+        int n = sampleRose(radius, petals, samples, rotRadians);
+        stroke(c, m, CURVE_X, CURVE_Z, n, thickness, rgb, alpha);
+    }
+
+    /**
+     * Spirograph (hypotrochoid). {@code R}, {@code r} and {@code d} are chosen so the ratio is not 1,
+     * which is the degenerate case that collapses into a plain ring.
+     */
+    static void spiro(VertexConsumer c, Matrix4f m, float bigR, float smallR, float d, int turns, int samples,
+                      float thickness, int rgb, int alpha, float rotRadians) {
+        int n = sampleSpiro(bigR, smallR, d, turns, samples, rotRadians);
+        stroke(c, m, CURVE_X, CURVE_Z, n, thickness, rgb, alpha);
+    }
+
+    /** Lissajous figure. {@code a} and {@code b} must differ, or the figure degenerates into an ellipse. */
+    static void lissajous(VertexConsumer c, Matrix4f m, float ax, float az, int a, int b, float phase, int samples,
+                          float thickness, int rgb, int alpha, float rotRadians) {
+        int n = sampleLissajous(ax, az, a, b, phase, samples, rotRadians);
+        stroke(c, m, CURVE_X, CURVE_Z, n, thickness, rgb, alpha);
+    }
+
+    private static int sampleRose(float radius, int petals, int samples, float rot) {
+        int n = Math.min(samples, CURVE_X.length);
+        float c = Mth.cos(rot);
+        float s = Mth.sin(rot);
+        for (int i = 0; i < n; i++) {
+            float t = i * Mth.TWO_PI / (n - 1);
+            float radial = radius * Mth.cos(petals * t);
+            float x = Mth.cos(t) * radial;
+            float z = Mth.sin(t) * radial;
+            CURVE_X[i] = x * c - z * s;
+            CURVE_Z[i] = x * s + z * c;
+        }
+        return n;
+    }
+
+    private static int sampleSpiro(float bigR, float smallR, float d, int turns, int samples, float rot) {
+        int n = Math.min(samples, CURVE_X.length);
+        float c = Mth.cos(rot);
+        float s = Mth.sin(rot);
+        float k = (bigR - smallR) / smallR;
+        for (int i = 0; i < n; i++) {
+            float t = i * (Mth.TWO_PI * turns) / (n - 1);
+            float x = (bigR - smallR) * Mth.cos(t) + d * Mth.cos(k * t);
+            float z = (bigR - smallR) * Mth.sin(t) - d * Mth.sin(k * t);
+            CURVE_X[i] = x * c - z * s;
+            CURVE_Z[i] = x * s + z * c;
+        }
+        return n;
+    }
+
+    private static int sampleLissajous(float ax, float az, int a, int b, float phase, int samples, float rot) {
+        int n = Math.min(samples, CURVE_X.length);
+        float c = Mth.cos(rot);
+        float s = Mth.sin(rot);
+        for (int i = 0; i < n; i++) {
+            float t = i * Mth.TWO_PI / (n - 1);
+            float x = ax * Mth.sin(a * t + phase);
+            float z = az * Mth.sin(b * t);
+            CURVE_X[i] = x * c - z * s;
+            CURVE_Z[i] = x * s + z * c;
+        }
+        return n;
+    }
 }

@@ -26,6 +26,7 @@ public record SovereignConfig(
         int auraIntervalTicks,
         float damagePerAttack,
         float auraRadius,
+        int lightningPerTick,
         String invocationPhrase,
         String commandToken) {
 
@@ -42,6 +43,7 @@ public record SovereignConfig(
                 d.auraIntervalTicks(),
                 d.damagePerAttack(),
                 d.auraRadius(),
+                d.lightningPerTick(),
                 "the abyssal sovereign awakens",
                 "sovereign manifest");
     }
@@ -56,7 +58,8 @@ public record SovereignConfig(
                 lightningIntervalTicks,
                 auraIntervalTicks,
                 damagePerAttack,
-                auraRadius);
+                auraRadius,
+                lightningPerTick);
     }
 
     /**
@@ -87,6 +90,7 @@ public record SovereignConfig(
                     parseInt(props, "aura_interval_ticks", d.auraIntervalTicks),
                     parseFloat(props, "damage_per_attack", d.damagePerAttack),
                     parseFloat(props, "aura_radius", d.auraRadius),
+                    parseInt(props, "lightning_per_tick", d.lightningPerTick),
                     props.getProperty("invocation_phrase", d.invocationPhrase).trim(),
                     props.getProperty("command_token", d.commandToken).trim());
         } catch (IOException e) {
@@ -104,6 +108,7 @@ public record SovereignConfig(
         props.setProperty("aura_interval_ticks", Integer.toString(auraIntervalTicks));
         props.setProperty("damage_per_attack", Float.toString(damagePerAttack));
         props.setProperty("aura_radius", Float.toString(auraRadius));
+        props.setProperty("lightning_per_tick", Integer.toString(lightningPerTick));
         props.setProperty("invocation_phrase", invocationPhrase);
         props.setProperty("command_token", commandToken);
         try (OutputStream out = Files.newOutputStream(file)) {

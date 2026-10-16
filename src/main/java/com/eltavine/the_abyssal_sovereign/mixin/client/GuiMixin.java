@@ -1,5 +1,6 @@
 package com.eltavine.the_abyssal_sovereign.mixin.client;
 
+import com.eltavine.the_abyssal_sovereign.client.ScreenTremor;
 import com.eltavine.the_abyssal_sovereign.client.hud.SovereignHud;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.gui.Gui;
@@ -19,8 +20,16 @@ public abstract class GuiMixin {
 
     @Inject(
             method = "render(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V",
-            at = @At("TAIL"))
+            at = @At("HEAD"))
+    private void the_abyssal_sovereign$tremorBegin(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
+        ScreenTremor.push(guiGraphics);
+    }
+
+    @Inject(
+            method = "render(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/DeltaTracker;)V",
+            at = @At("RETURN"))
     private void the_abyssal_sovereign$renderHud(GuiGraphics guiGraphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         SovereignHud.render(guiGraphics, deltaTracker);
+        ScreenTremor.pop(guiGraphics);
     }
 }

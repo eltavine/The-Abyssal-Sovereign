@@ -54,6 +54,13 @@ public sealed interface BossCommand {
     record Aura(int id, float radius, int amplifier, int duration) implements BossCommand {
     }
 
+    record Purge(double x, double y, double z, float radius, int scope) implements BossCommand {
+
+        public boolean global() {
+            return scope == Protocol.PURGE_GLOBAL;
+        }
+    }
+
     /**
      * Decodes a COMMAND_BATCH payload (the bytes after the frame header and opcode).
      *
@@ -95,6 +102,8 @@ public sealed interface BossCommand {
                         buf.getDouble(), buf.getDouble(), buf.getDouble(), buf.getLong()));
                 case Protocol.CMD_AURA -> commands.add(new Aura(
                         buf.get() & 0xFF, buf.getFloat(), buf.get() & 0xFF, buf.getShort() & 0xFFFF));
+                case Protocol.CMD_PURGE -> commands.add(new Purge(
+                        buf.getDouble(), buf.getDouble(), buf.getDouble(), buf.getFloat(), buf.get() & 0xFF));
                 default -> {
                     return commands;
                 }

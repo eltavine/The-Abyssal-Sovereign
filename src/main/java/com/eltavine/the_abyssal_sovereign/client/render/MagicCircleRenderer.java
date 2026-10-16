@@ -3,64 +3,68 @@ package com.eltavine.the_abyssal_sovereign.client.render;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.util.Mth;
 
 /**
- * The abyssal sigil: dozens of stacked black/red/white layers burning into the ground.
+ * The ground sigil: stacked roses, spirographs and Lissajous figures, and nothing simpler.
  *
- * <p>Built from filled annular bands, many nested star polygons (heptagrams, enneagrams and the like)
- * and toothed rings, each counter-rotating at its own rate. Drawn additively, so the overlapping
- * bands brighten into the layered glow rather than z-fighting as opaque coplanar quads.
+ * <p>A ring, a disc or a regular polygon would read as a plain circle. Every layer here is a
+ * self-intersecting curve — a rhodonea with at least three petals, a hypotrochoid whose radius
+ * ratio is never 1, or a Lissajous figure whose two frequencies differ — drawn twice, once in each
+ * direction, so the overlaps braid instead of sitting as a single stroke.
  */
 final class MagicCircleRenderer {
 
-    private static final int SEGMENTS = 72;
-    private static final int STAR_LAYERS = 24;
-    private static final float GROUND_OFFSET = 0.15F;
-    private static final float LAYER_LIFT = 0.03F;
+    private static final int SAMPLES = 280;
+    private static final int ROSE_LAYERS = 16;
+    private static final int SPIRO_LAYERS = 12;
+    private static final int LISSA_LAYERS = 10;
+    private static final float GROUND_OFFSET = 0.2F;
+    private static final float LAYER_LIFT = 0.045F;
 
     private MagicCircleRenderer() {
     }
 
     static void render(PoseStack poseStack, MultiBufferSource bufferSource, float age, float radius, float actionBoost) {
         VertexConsumer c = GeoDraw.glowBuffer(bufferSource);
-        float heat = 0.4F + actionBoost * 0.6F;
+        float heat = 1.0F + actionBoost * 0.35F;
 
         poseStack.pushPose();
         poseStack.translate(0.0F, GROUND_OFFSET, 0.0F);
 
-        // Foundation: a dim red well under bright red and bone rims. (Additive, so the "black" of
-        // the sigil is simply the dark ground showing between the glowing bands.)
-        GeoDraw.band(c, poseStack.last().pose(), 0.0F, radius * 0.52F, SEGMENTS, AbyssalPalette.RED_0, 90);
-        lift(poseStack);
-        GeoDraw.band(c, poseStack.last().pose(), radius * 0.49F, radius * 0.52F, SEGMENTS, AbyssalPalette.RED_3, 235);
-        lift(poseStack);
-        GeoDraw.band(c, poseStack.last().pose(), radius * 0.30F, radius * 0.315F, SEGMENTS, AbyssalPalette.WHITE_1, 220);
-
-        // Nested star polygons, convex and star-stepped, counter-rotating.
-        for (int i = 0; i < STAR_LAYERS; i++) {
+        for (int i = 0; i < ROSE_LAYERS; i++) {
             lift(poseStack);
-            float t = i / (float) STAR_LAYERS;
-            int sides = 3 + (i % 10);
-            int step = (i % 2 == 0) ? 1 : Math.max(1, (sides - 1) / 2);
-            float rr = radius * (0.16F + 0.82F * t);
-            float thickness = radius * (0.004F + 0.004F * (i % 3)) * (1.0F + heat);
-            int color = AbyssalPalette.layer(i);
-            int alpha = AbyssalPalette.pulseAlpha(age, i, 130);
+            int petals = 3 + (i % 9);
+            float rr = radius * (0.18F + 0.05F * i) * heat;
             float dir = (i % 2 == 0) ? 1.0F : -1.0F;
-            float rot = age * (0.25F + 0.06F * i) * dir * (0.6F + heat);
-            GeoDraw.polygon(c, poseStack.last().pose(), rr, sides, step, thickness, color, alpha, rot);
+            float rot = age * (0.15F + 0.02F * i) * dir * Mth.DEG_TO_RAD;
+            float thickness = radius * (0.006F + 0.0015F * (i % 3));
+            GeoDraw.rose(c, poseStack.last().pose(), rr, petals, SAMPLES, thickness,
+                    AbyssalPalette.layer(i), AbyssalPalette.pulseAlpha(age, i, 150), rot);
+            GeoDraw.rose(c, poseStack.last().pose(), rr * 0.62F, petals + 2, SAMPLES, thickness * 0.7F,
+                    AbyssalPalette.layer(i + 3), AbyssalPalette.pulseAlpha(age, i + 4, 120), -rot * 1.4F);
         }
 
-        // Outer toothed rings.
-        lift(poseStack);
-        GeoDraw.teeth(c, poseStack.last().pose(), radius * 0.88F, 48, radius * 0.06F, radius * 0.012F,
-                AbyssalPalette.RED_4, AbyssalPalette.pulseAlpha(age, 3, 150), age * 0.4F);
-        lift(poseStack);
-        GeoDraw.teeth(c, poseStack.last().pose(), radius * 0.96F, 72, radius * 0.04F, radius * 0.008F,
-                AbyssalPalette.WHITE_0, AbyssalPalette.pulseAlpha(age, 7, 150), -age * 0.3F);
-        lift(poseStack);
-        GeoDraw.polygon(c, poseStack.last().pose(), radius * 1.0F, 96, 1, radius * 0.01F,
-                AbyssalPalette.RED_2, 210, 0.0F);
+        for (int i = 0; i < SPIRO_LAYERS; i++) {
+            lift(poseStack);
+            float big = radius * (0.35F + 0.055F * i);
+            float small = big * (0.22F + 0.03F * (i % 4));
+            float d = small * (1.4F + 0.35F * (i % 3));
+            int turns = 3 + (i % 5);
+            float rot = age * (0.12F + 0.03F * i) * ((i % 2 == 0) ? 1.0F : -1.0F) * Mth.DEG_TO_RAD;
+            GeoDraw.spiro(c, poseStack.last().pose(), big, small, d, turns, SAMPLES, radius * 0.005F,
+                    AbyssalPalette.layer(i + 1), AbyssalPalette.pulseAlpha(age, i + 2, 140), rot);
+        }
+
+        for (int i = 0; i < LISSA_LAYERS; i++) {
+            lift(poseStack);
+            int a = 2 + (i % 5);
+            int b = a + 1 + (i % 3);
+            float amp = radius * (0.4F + 0.04F * i);
+            float rot = -age * (0.2F + 0.02F * i) * Mth.DEG_TO_RAD;
+            GeoDraw.lissajous(c, poseStack.last().pose(), amp, amp * 0.86F, a, b, i * 0.4F, SAMPLES,
+                    radius * 0.0045F, AbyssalPalette.layer(i + 5), AbyssalPalette.pulseAlpha(age, i + 6, 130), rot);
+        }
 
         poseStack.popPose();
     }

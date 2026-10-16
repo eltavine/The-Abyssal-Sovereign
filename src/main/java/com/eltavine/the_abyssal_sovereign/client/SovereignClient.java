@@ -4,6 +4,7 @@ import com.eltavine.the_abyssal_sovereign.bridge.Protocol;
 import com.eltavine.the_abyssal_sovereign.bridge.Snapshot;
 import com.eltavine.the_abyssal_sovereign.bridge.SovereignBridge;
 import com.eltavine.the_abyssal_sovereign.client.effect.LocalPlayerEffector;
+import com.eltavine.the_abyssal_sovereign.client.effect.WorldErasure;
 import com.eltavine.the_abyssal_sovereign.client.render.AbyssalLightningRenderer;
 import com.eltavine.the_abyssal_sovereign.config.SovereignConfig;
 import java.nio.file.Path;
@@ -84,12 +85,16 @@ public final class SovereignClient {
     /** Per client tick: advance the clock, observe the world, feed the daemon, apply what returns. */
     public static void onClientTick() {
         clientTick++;
-        if (!BRIDGE.isReady()) {
-            return;
-        }
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         ClientLevel level = minecraft.level;
+        // Independent of the daemon: a dropped command must not leave creatures standing.
+        if (active && player != null && level != null) {
+            WorldErasure.sweep();
+        }
+        if (!BRIDGE.isReady()) {
+            return;
+        }
         if (player == null || level == null) {
             // Not in a world: tell the daemon so it stands the boss down, and clear any backlog.
             BRIDGE.submitSnapshot(emptySnapshot());
