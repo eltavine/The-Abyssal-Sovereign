@@ -1,6 +1,7 @@
 package com.eltavine.the_abyssal_sovereign.mixin.client;
 
 import com.eltavine.the_abyssal_sovereign.client.ScreenTremor;
+import com.eltavine.the_abyssal_sovereign.client.guard.SovereignGuard;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,5 +32,7 @@ public abstract class ScreenShakeMixin {
             at = @At("RETURN"))
     private void the_abyssal_sovereign$tremorEnd(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
         ScreenTremor.pop(graphics);
+        // After the pop, so the lockdown is steady and covers the screen and its tooltips.
+        SovereignGuard.renderOverlay(graphics);
     }
 }

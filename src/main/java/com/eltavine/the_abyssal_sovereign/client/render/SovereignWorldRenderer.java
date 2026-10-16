@@ -3,6 +3,7 @@ package com.eltavine.the_abyssal_sovereign.client.render;
 import com.eltavine.the_abyssal_sovereign.bridge.BossCommand;
 import com.eltavine.the_abyssal_sovereign.bridge.Protocol;
 import com.eltavine.the_abyssal_sovereign.client.SovereignClient;
+import com.eltavine.the_abyssal_sovereign.client.guard.SovereignGuard;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
@@ -113,6 +114,9 @@ public final class SovereignWorldRenderer {
         AbyssalLightningRenderer.render(poseStack, buffers, camPos, clientTick, partial);
 
         buffers.endBatch();
+
+        // Stamped only once the draw has gone through, so a render cut short reads as suppressed.
+        SovereignGuard.markWorldRender();
     }
 
     private static SovereignWardenRig rig(Minecraft minecraft) {

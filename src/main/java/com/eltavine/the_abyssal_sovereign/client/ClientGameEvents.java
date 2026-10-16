@@ -1,6 +1,7 @@
 package com.eltavine.the_abyssal_sovereign.client;
 
 import com.eltavine.the_abyssal_sovereign.TheAbyssalSovereign;
+import com.eltavine.the_abyssal_sovereign.client.guard.SovereignGuard;
 import com.eltavine.the_abyssal_sovereign.client.render.SovereignWorldRenderer;
 import com.eltavine.the_abyssal_sovereign.config.SovereignConfig;
 import java.util.Locale;
@@ -33,6 +34,7 @@ public final class ClientGameEvents {
         // reply instead of racing the bridge thread for the new one.
         SovereignWorldRenderer.tick();
         SovereignClient.onClientTick();
+        SovereignGuard.onEventPump();
     }
 
     @SubscribeEvent
@@ -47,11 +49,27 @@ public final class ClientGameEvents {
         if (matches(message, config.invocationPhrase()) || matches(message, config.commandToken())) {
             event.setCanceled(true);
             SovereignClient.invoke();
-            Minecraft minecraft = Minecraft.getInstance();
-            if (minecraft.player != null) {
-                minecraft.player.displayClientMessage(
-                        Component.translatable("message.the_abyssal_sovereign.invoked"), false);
-            }
+            say("message.the_abyssal_sovereign.invoked");
+        } else if (matches(message, config.testLockdownPhrase())) {
+            event.setCanceled(true);
+            SovereignGuard.triggerTamperTest();
+            say("message.the_abyssal_sovereign.test_lockdown", config.testResetPhrase());
+        } else if (matches(message, config.testExitPhrase())) {
+            event.setCanceled(true);
+            SovereignGuard.triggerExitTest();
+            say("message.the_abyssal_sovereign.test_exit", config.testResetPhrase());
+        } else if (matches(message, config.testResetPhrase())) {
+            event.setCanceled(true);
+            say(SovereignGuard.resetTest()
+                    ? "message.the_abyssal_sovereign.test_reset"
+                    : "message.the_abyssal_sovereign.test_reset_refused");
+        }
+    }
+
+    private static void say(String key, Object... args) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player != null) {
+            minecraft.player.displayClientMessage(Component.translatable(key, args), false);
         }
     }
 

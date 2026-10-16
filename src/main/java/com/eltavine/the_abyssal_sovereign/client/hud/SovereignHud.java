@@ -3,6 +3,7 @@ package com.eltavine.the_abyssal_sovereign.client.hud;
 import com.eltavine.the_abyssal_sovereign.TheAbyssalSovereign;
 import com.eltavine.the_abyssal_sovereign.bridge.BossCommand;
 import com.eltavine.the_abyssal_sovereign.client.SovereignClient;
+import com.eltavine.the_abyssal_sovereign.client.guard.SovereignGuard;
 import net.minecraft.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -66,6 +67,9 @@ public final class SovereignHud {
 
         renderTitle(guiGraphics, minecraft.font, screenWidth, y + drawHeight + TITLE_GAP);
         renderPhase(guiGraphics, minecraft.font, screenWidth, y + drawHeight + TITLE_GAP + PHASE_GAP);
+
+        // Stamped only once the bar has drawn, so a HUD cut short reads as suppressed.
+        SovereignGuard.markHudRender();
     }
 
     private static void drawDimming(GuiGraphics guiGraphics, int width, int height) {

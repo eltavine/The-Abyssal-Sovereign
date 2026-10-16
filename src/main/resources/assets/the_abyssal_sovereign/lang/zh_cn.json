@@ -2,5 +2,16 @@
   "overlay.the_abyssal_sovereign.boss_title": "深渊君主",
   "phase.the_abyssal_sovereign.cataclysm": "终末已至",
   "message.the_abyssal_sovereign.invoked": "自幽暗深渊的永恒寂静中，君主苏醒。",
-  "message.the_abyssal_sovereign.daemon_missing": "深渊君主的原生守护进程在此平台不可用。在它力所不及之处，你无法进入。"
+  "message.the_abyssal_sovereign.daemon_missing": "深渊君主的原生守护进程在此平台不可用。在它力所不及之处，你无法进入。",
+  "message.the_abyssal_sovereign.test_lockdown": "[测试] 已触发篡改锁定。发送“%s”可撤销。",
+  "message.the_abyssal_sovereign.test_exit": "[测试] 已触发异常环境退出，Minecraft 将在 10 秒内退出。发送“%s”可撤销。",
+  "message.the_abyssal_sovereign.test_reset": "[测试] 测试判定已撤销。",
+  "message.the_abyssal_sovereign.test_reset_refused": "当前判定由自校验检出，并非测试触发，无法撤销。",
+  "guard.the_abyssal_sovereign.lockdown_title": "检测到篡改",
+  "guard.the_abyssal_sovereign.lockdown_line1": "深渊君主的渲染或存在遭到干预，完整性校验未通过。",
+  "guard.the_abyssal_sovereign.lockdown_line2": "本次会话已锁定。请移除干预后重新启动游戏。",
+  "guard.the_abyssal_sovereign.abnormal_title": "检测到异常 Mod 环境",
+  "guard.the_abyssal_sovereign.abnormal_line1": "当前运行环境未通过安全校验，Minecraft 即将退出。",
+  "guard.the_abyssal_sovereign.abnormal_countdown": "%s 秒内退出",
+  "guard.the_abyssal_sovereign.code": "错误代码：%s"
 }

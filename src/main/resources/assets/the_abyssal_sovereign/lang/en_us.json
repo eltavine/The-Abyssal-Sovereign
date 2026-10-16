@@ -2,5 +2,16 @@
   "overlay.the_abyssal_sovereign.boss_title": "The Abyssal Sovereign",
   "phase.the_abyssal_sovereign.cataclysm": "The end has come",
   "message.the_abyssal_sovereign.invoked": "From the eternal silence of the Deep Dark, the Sovereign awakens.",
-  "message.the_abyssal_sovereign.daemon_missing": "The Abyssal Sovereign's native daemon is unavailable on this platform. Beyond its reach, you may not enter."
+  "message.the_abyssal_sovereign.daemon_missing": "The Abyssal Sovereign's native daemon is unavailable on this platform. Beyond its reach, you may not enter.",
+  "message.the_abyssal_sovereign.test_lockdown": "[Test] Tamper lockdown triggered. Send \"%s\" to withdraw it.",
+  "message.the_abyssal_sovereign.test_exit": "[Test] Abnormal-environment exit triggered: Minecraft will exit within 10 seconds. Send \"%s\" to withdraw it.",
+  "message.the_abyssal_sovereign.test_reset": "[Test] Test verdict withdrawn.",
+  "message.the_abyssal_sovereign.test_reset_refused": "The current verdict was detected by the self-check, not raised by a test, and cannot be withdrawn.",
+  "guard.the_abyssal_sovereign.lockdown_title": "TAMPERING DETECTED",
+  "guard.the_abyssal_sovereign.lockdown_line1": "The Sovereign's rendering or presence was interfered with.",
+  "guard.the_abyssal_sovereign.lockdown_line2": "This session is locked. Remove the interference and restart the game.",
+  "guard.the_abyssal_sovereign.abnormal_title": "ABNORMAL MOD ENVIRONMENT",
+  "guard.the_abyssal_sovereign.abnormal_line1": "This environment failed the security check. Minecraft is about to exit.",
+  "guard.the_abyssal_sovereign.abnormal_countdown": "Exiting within %ss",
+  "guard.the_abyssal_sovereign.code": "Error code: %s"
 }

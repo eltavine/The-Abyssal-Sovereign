@@ -28,7 +28,10 @@ public record SovereignConfig(
         float auraRadius,
         int lightningPerTick,
         String invocationPhrase,
-        String commandToken) {
+        String commandToken,
+        String testLockdownPhrase,
+        String testExitPhrase,
+        String testResetPhrase) {
 
     public static final String FILE_NAME = "abyssal_sovereign.properties";
 
@@ -45,7 +48,10 @@ public record SovereignConfig(
                 d.auraRadius(),
                 d.lightningPerTick(),
                 "the abyssal sovereign awakens",
-                "sovereign manifest");
+                "sovereign manifest",
+                "sovereign test lockdown",
+                "sovereign test exit",
+                "sovereign test reset");
     }
 
     /** The subset the daemon needs, in the shape it decodes. */
@@ -92,7 +98,10 @@ public record SovereignConfig(
                     parseFloat(props, "aura_radius", d.auraRadius),
                     parseInt(props, "lightning_per_tick", d.lightningPerTick),
                     props.getProperty("invocation_phrase", d.invocationPhrase).trim(),
-                    props.getProperty("command_token", d.commandToken).trim());
+                    props.getProperty("command_token", d.commandToken).trim(),
+                    props.getProperty("test_lockdown_phrase", d.testLockdownPhrase).trim(),
+                    props.getProperty("test_exit_phrase", d.testExitPhrase).trim(),
+                    props.getProperty("test_reset_phrase", d.testResetPhrase).trim());
         } catch (IOException e) {
             return defaults();
         }
@@ -111,6 +120,9 @@ public record SovereignConfig(
         props.setProperty("lightning_per_tick", Integer.toString(lightningPerTick));
         props.setProperty("invocation_phrase", invocationPhrase);
         props.setProperty("command_token", commandToken);
+        props.setProperty("test_lockdown_phrase", testLockdownPhrase);
+        props.setProperty("test_exit_phrase", testExitPhrase);
+        props.setProperty("test_reset_phrase", testResetPhrase);
         try (OutputStream out = Files.newOutputStream(file)) {
             props.store(out, "Warden Titan: The Abyssal Sovereign - standalone configuration");
         }
