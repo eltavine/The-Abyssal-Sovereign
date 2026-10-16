@@ -4,6 +4,7 @@ import com.eltavine.the_abyssal_sovereign.bridge.Protocol;
 import com.eltavine.the_abyssal_sovereign.bridge.Snapshot;
 import com.eltavine.the_abyssal_sovereign.bridge.SovereignBridge;
 import com.eltavine.the_abyssal_sovereign.client.effect.LocalPlayerEffector;
+import com.eltavine.the_abyssal_sovereign.client.effect.WeatherDominion;
 import com.eltavine.the_abyssal_sovereign.client.effect.WorldErasure;
 import com.eltavine.the_abyssal_sovereign.client.render.AbyssalLightningRenderer;
 import com.eltavine.the_abyssal_sovereign.config.SovereignConfig;
@@ -88,9 +89,11 @@ public final class SovereignClient {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         ClientLevel level = minecraft.level;
-        // Independent of the daemon: a dropped command must not leave creatures standing.
+        // Independent of the daemon: a dropped command must not leave creatures standing or the
+        // storm lifting.
         if (active && player != null && level != null) {
             WorldErasure.sweep();
+            WeatherDominion.enforce();
         }
         if (!BRIDGE.isReady()) {
             return;
