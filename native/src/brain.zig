@@ -387,9 +387,9 @@ pub const Boss = struct {
         // always present.
         self.arm(snap.tick, .{ .sound = soundAt(proto.SND_HEARTBEAT, snap, 2.0, 1.0) });
         if (dist > self.reach(self.cfg.aura_radius)) return;
-        self.arm(snap.tick, .{ .aura = .{ .id = proto.AURA_DARKNESS, .radius = self.cfg.aura_radius, .amplifier = 0, .duration = 80 } });
-        self.arm(snap.tick, .{ .aura = .{ .id = proto.AURA_SLOWNESS, .radius = self.cfg.aura_radius, .amplifier = 1, .duration = 80 } });
-        self.arm(snap.tick, .{ .aura = .{ .id = proto.AURA_WEAKNESS, .radius = self.cfg.aura_radius, .amplifier = 1, .duration = 80 } });
+        // Amplifier 9 is what the game displays as level X.
+        self.arm(snap.tick, .{ .aura = .{ .id = proto.AURA_SLOWNESS, .radius = self.cfg.aura_radius, .amplifier = 9, .duration = 80 } });
+        self.arm(snap.tick, .{ .aura = .{ .id = proto.AURA_WEAKNESS, .radius = self.cfg.aura_radius, .amplifier = 9, .duration = 80 } });
     }
 
     const Ability = enum { melee, sonic, roar, slam, summon };
@@ -573,6 +573,24 @@ test "every active tick orders a world-wide purge, and only then" {
     cmds = CommandList{};
     boss.step(makeSnapshot(1, 0, proto.FLAG_IN_WORLD), &cmds);
     try std.testing.expectEqual(@as(usize, 0), cmds.countOf(.purge));
+}
+
+test "the aura blinds no one and lands slowness and weakness at level X" {
+    var boss = Boss.init();
+    var cmds = CommandList{};
+    // The first active tick is an aura tick, and the titan stands within its reach.
+    boss.step(makeSnapshot(0, 0, ACTIVE_FLAGS), &cmds);
+    var slowness = false;
+    var weakness = false;
+    for (cmds.slice()) |cmd| {
+        if (cmd != .aura) continue;
+        try std.testing.expect(cmd.aura.id != proto.AURA_DARKNESS);
+        try std.testing.expectEqual(@as(u8, 9), cmd.aura.amplifier);
+        if (cmd.aura.id == proto.AURA_SLOWNESS) slowness = true;
+        if (cmd.aura.id == proto.AURA_WEAKNESS) weakness = true;
+    }
+    try std.testing.expect(slowness and weakness);
+    try std.testing.expectEqual(@as(usize, 2), cmds.countOf(.aura));
 }
 
 test "ability selection is deterministic for a fixed seed" {
